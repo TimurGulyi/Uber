@@ -219,27 +219,65 @@ export default function EarningsTab() {
                 })}
               </div>
 
-              {selectedDay !== null && (
-                <div style={{marginTop:10,background:'rgba(0,229,160,0.05)',border:'1px solid rgba(0,229,160,0.2)',borderRadius:10,padding:'12px 14px'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div>
-                      <div style={{fontSize:'0.6rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginBottom:2}}>{DAYS[selectedDay]} · {(() => { const d = new Date(activeWeek.week_start); d.setDate(d.getDate() + selectedDay); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) })()}</div>
-                      <div style={{fontSize:'1.6rem',fontWeight:800,color:'var(--green)',letterSpacing:'-0.03em'}}>{fmt(dayEarnings[selectedDay])}</div>
-                    </div>
-                    <div style={{textAlign:'right'}}>
-                      <div style={{fontSize:'0.55rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginBottom:2}}>Trips</div>
-                      <div style={{fontSize:'1.2rem',fontWeight:800,color:'var(--text)'}}>
-                        {(() => {
-                          const d = new Date(activeWeek.week_start)
-                          d.setDate(d.getDate() + selectedDay)
-                          const dateStr = d.toISOString().slice(0, 10)
-                          return trips.filter(t => t.date === dateStr).length
-                        })()}
+              {selectedDay !== null && (() => {
+                const d = new Date(activeWeek.week_start)
+                d.setDate(d.getDate() + selectedDay)
+                const dateStr = d.toISOString().slice(0, 10)
+                const dayTrips = trips.filter(t => t.date === dateStr)
+                const dayBase  = dayTrips.reduce((s, t) => s + (t.earnings ?? 0), 0)
+                const dayTips  = dayTrips.reduce((s, t) => s + (t.tip ?? 0), 0)
+                const dayTotal = dayTrips.reduce((s, t) => s + (t.total ?? 0), 0)
+                const dateLabel = d.toLocaleDateString('en-US', {month:'short', day:'numeric'})
+                return (
+                  <div style={{marginTop:10,background:'rgba(0,229,160,0.05)',border:'1px solid rgba(0,229,160,0.2)',borderRadius:10,padding:'12px 14px'}}>
+                    {/* Header */}
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+                      <div>
+                        <div style={{fontSize:'0.6rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginBottom:3}}>{DAYS[selectedDay]} · {dateLabel}</div>
+                        <div style={{fontSize:'1.8rem',fontWeight:800,color:'var(--green)',letterSpacing:'-0.03em',lineHeight:1}}>{fmt(dayTotal)}</div>
+                        <div style={{fontSize:'0.55rem',color:'var(--muted)',marginTop:2}}>total earned</div>
+                      </div>
+                      <div style={{background:'rgba(255,255,255,0.06)',borderRadius:8,padding:'8px 12px',textAlign:'center'}}>
+                        <div style={{fontSize:'1.4rem',fontWeight:800,color:'var(--text)',lineHeight:1}}>{dayTrips.length}</div>
+                        <div style={{fontSize:'0.5rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginTop:2}}>trips</div>
                       </div>
                     </div>
+
+                    {/* Stat row */}
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom: dayTrips.length > 0 ? 12 : 0}}>
+                      {[
+                        {l:'Base Pay', v:fmt(dayBase),  c:'var(--green)'},
+                        {l:'Tips',     v:fmt(dayTips),  c:'var(--yellow)'},
+                      ].map(r => (
+                        <div key={r.l} style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'8px 10px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontSize:'0.6rem',color:'var(--muted)'}}>{r.l}</span>
+                          <span style={{fontSize:'0.8rem',fontWeight:700,color:r.c}}>{r.v}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Trip list */}
+                    {dayTrips.length > 0 ? (
+                      <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                        {dayTrips.map(t => (
+                          <div key={t.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(255,255,255,0.03)',borderRadius:8,padding:'7px 10px'}}>
+                            <div>
+                              <div style={{fontSize:'0.7rem',fontWeight:600}}>{t.restaurant_name || 'Trip'}</div>
+                              {t.zone && <div style={{fontSize:'0.55rem',color:'var(--muted)',marginTop:1}}>{t.zone}</div>}
+                            </div>
+                            <div style={{textAlign:'right'}}>
+                              <div style={{fontSize:'0.78rem',fontWeight:800,color:'var(--green)'}}>{fmt(t.total)}</div>
+                              {t.tip > 0 && <div style={{fontSize:'0.55rem',color:'var(--yellow)',marginTop:1}}>tip {fmt(t.tip)}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{textAlign:'center',fontSize:'0.62rem',color:'var(--muted)',fontFamily:'Space Mono,monospace',paddingTop:4}}>no trips logged</div>
+                    )}
                   </div>
-                </div>
-              )}
+                )
+              })()}
             </div>
           )}
         </div>

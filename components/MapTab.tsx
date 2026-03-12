@@ -44,19 +44,20 @@ const PIN_STYLE = {
 type PinType = 'hot'|'new'|'yours'|'cold'
 
 function getZoneDemand(lat: number, lng: number, hour: number) {
-  let best: Zone|null = null, bestDist = Infinity
-  ZONES.forEach(z => {
-    const d = Math.sqrt((lat-z.lat)**2+(lng-z.lng)**2)*111000
-    if (d < z.radius && d < bestDist) { best=z; bestDist=d }
-  })
-  if (best === null) return { type:'cold' as PinType, demand:0, zone: null }
-  const zone: Zone = best
-  const demand = zone.demand[hour], personal = zone.myOrders[hour]
-  const hasHistory = zone.myOrders.reduce((a,b)=>a+b,0) > 3
-  if (demand>=7 && personal>=4) return { type:'hot' as PinType, demand, zone }
-  if (demand>=5 && personal<3)  return { type:'new' as PinType, demand, zone }
-  if (demand<5  && hasHistory)  return { type:'yours' as PinType, demand, zone }
-  return { type:'cold' as PinType, demand, zone }
+  let found: Zone | null = null
+  let bestDist = Infinity
+  for (const z of ZONES) {
+    const d = Math.sqrt((lat - z.lat) ** 2 + (lng - z.lng) ** 2) * 111000
+    if (d < z.radius && d < bestDist) { found = z; bestDist = d }
+  }
+  if (found === null) return { type: 'cold' as PinType, demand: 0, zone: null }
+  const demand   = found.demand[hour]
+  const personal = found.myOrders[hour]
+  const hasHistory = found.myOrders.reduce((a, b) => a + b, 0) > 3
+  if (demand >= 7 && personal >= 4) return { type: 'hot'   as PinType, demand, zone: found }
+  if (demand >= 5 && personal  < 3) return { type: 'new'   as PinType, demand, zone: found }
+  if (demand  < 5 && hasHistory)    return { type: 'yours' as PinType, demand, zone: found }
+  return { type: 'cold' as PinType, demand, zone: found }
 }
 
 function getPeriodName(minutes: number) {

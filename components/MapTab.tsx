@@ -39,11 +39,12 @@ const PIN_STYLE = {
 type PinType = 'hot'|'new'|'yours'|'cold'
 
 function getZoneDemand(lat: number, lng: number, hour: number) {
-  let best: typeof ZONES[0]|null = null, bestDist = Infinity
+  let _best: typeof ZONES[0]|null = null, bestDist = Infinity
   ZONES.forEach(z => {
     const d = Math.sqrt((lat-z.lat)**2+(lng-z.lng)**2)*111000
-    if (d < z.radius && d < bestDist) { best=z; bestDist=d }
+    if (d < z.radius && d < bestDist) { _best=z; bestDist=d }
   })
+  const best = _best
   if (!best) return { type:'cold' as PinType, demand:0, zone: null }
   const demand = best.demand[hour], personal = best.myOrders[hour]
   const hasHistory = best.myOrders.reduce((a,b)=>a+b,0) > 3

@@ -106,6 +106,40 @@ export default function InsightsTab() {
           </div>
         </div>
 
+        {/* Hourly earnings table — cheapest to best */}
+        <div style={{margin:'0 16px 12px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden'}}>
+          <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)'}}>
+            <div style={{fontSize:'0.7rem',fontWeight:700,fontFamily:'Space Mono,monospace',letterSpacing:'0.1em',color:'var(--muted)',textTransform:'uppercase'}}>Avg $ by Hour</div>
+            <div style={{fontSize:'0.6rem',color:'var(--muted)',marginTop:2}}>hours with trips · sorted lowest → highest</div>
+          </div>
+          {/* Table header */}
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',padding:'7px 16px',borderBottom:'1px solid var(--border)',background:'rgba(255,255,255,0.02)'}}>
+            {['Time','Trips','Avg/trip','Total'].map(h=>(
+              <div key={h} style={{fontSize:'0.52rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.08em',textAlign: h==='Time'?'left':'right'}}>{h}</div>
+            ))}
+          </div>
+          {(() => {
+            const rows = hourData
+              .filter(h => h.count > 0)
+              .sort((a,b) => a.avg - b.avg)
+            const worstAvg = rows[0]?.avg ?? 0
+            const bestAvg  = rows[rows.length-1]?.avg ?? 1
+            return rows.map((h, i) => {
+              const pct = bestAvg > worstAvg ? (h.avg - worstAvg) / (bestAvg - worstAvg) : 1
+              const color = pct < 0.33 ? 'var(--red)' : pct < 0.66 ? 'var(--yellow)' : 'var(--green)'
+              const isLast = i === rows.length - 1
+              return (
+                <div key={h.hour} style={{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr',padding:'9px 16px',borderBottom: isLast?'none':'1px solid var(--border)',alignItems:'center'}}>
+                  <div style={{fontSize:'0.72rem',fontWeight:700,color:'var(--text)'}}>{fmt12(h.hour)}</div>
+                  <div style={{fontSize:'0.68rem',color:'var(--muted)',textAlign:'right'}}>{h.count}</div>
+                  <div style={{fontSize:'0.78rem',fontWeight:800,color,textAlign:'right'}}>${h.avg.toFixed(2)}</div>
+                  <div style={{fontSize:'0.65rem',color:'var(--muted)',textAlign:'right'}}>${(h.avg*h.count).toFixed(0)}</div>
+                </div>
+              )
+            })
+          })()}
+        </div>
+
         {/* Weekly earnings trend */}
         <div style={{margin:'0 16px',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'16px'}}>
           <div style={{fontSize:'0.7rem',fontWeight:700,marginBottom:12,fontFamily:'Space Mono,monospace',letterSpacing:'0.1em',color:'var(--muted)',textTransform:'uppercase'}}>Weekly Trend</div>

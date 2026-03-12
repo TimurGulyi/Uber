@@ -8,7 +8,12 @@ declare global {
   }
 }
 
-const ZONES = [
+interface Zone {
+  id: string; name: string; lat: number; lng: number; radius: number
+  demand: number[]; myOrders: number[]
+}
+
+const ZONES: Zone[] = [
   { id:'hollywood', name:'Hollywood',     lat:34.0928, lng:-118.3287, radius:1800,
     demand:[3,2,1,0,0,0,1,2,3,4,4,6,8,8,7,6,7,9,10,10,9,8,6,4],
     myOrders:[1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,5,6,7,5,4,4,3] },
@@ -39,19 +44,19 @@ const PIN_STYLE = {
 type PinType = 'hot'|'new'|'yours'|'cold'
 
 function getZoneDemand(lat: number, lng: number, hour: number) {
-  let _best: typeof ZONES[0]|null = null, bestDist = Infinity
+  let best: Zone|null = null, bestDist = Infinity
   ZONES.forEach(z => {
     const d = Math.sqrt((lat-z.lat)**2+(lng-z.lng)**2)*111000
-    if (d < z.radius && d < bestDist) { _best=z; bestDist=d }
+    if (d < z.radius && d < bestDist) { best=z; bestDist=d }
   })
-  const best = _best
-  if (!best) return { type:'cold' as PinType, demand:0, zone: null }
-  const demand = best.demand[hour], personal = best.myOrders[hour]
-  const hasHistory = best.myOrders.reduce((a,b)=>a+b,0) > 3
-  if (demand>=7 && personal>=4) return { type:'hot' as PinType, demand, zone:best }
-  if (demand>=5 && personal<3)  return { type:'new' as PinType, demand, zone:best }
-  if (demand<5  && hasHistory)  return { type:'yours' as PinType, demand, zone:best }
-  return { type:'cold' as PinType, demand, zone:best }
+  if (best === null) return { type:'cold' as PinType, demand:0, zone: null }
+  const zone: Zone = best
+  const demand = zone.demand[hour], personal = zone.myOrders[hour]
+  const hasHistory = zone.myOrders.reduce((a,b)=>a+b,0) > 3
+  if (demand>=7 && personal>=4) return { type:'hot' as PinType, demand, zone }
+  if (demand>=5 && personal<3)  return { type:'new' as PinType, demand, zone }
+  if (demand<5  && hasHistory)  return { type:'yours' as PinType, demand, zone }
+  return { type:'cold' as PinType, demand, zone }
 }
 
 function getPeriodName(minutes: number) {

@@ -1,22 +1,28 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase, EarningsWeek, Goal } from '@/lib/supabase'
+import { supabase, EarningsWeek, Goal, Trip } from '@/lib/supabase'
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const
 
 export default function EarningsTab() {
   const [weeks, setWeeks] = useState<EarningsWeek[]>([])
   const [goals, setGoals] = useState<Goal[]>([])
+  const [trips, setTrips] = useState<Trip[]>([])
   const [period, setPeriod] = useState<'week'|'month'|'all'>('month')
   const [loading, setLoading] = useState(true)
   const [selectedWeek, setSelectedWeek] = useState<number|null>(null)
+  const [selectedDay, setSelectedDay] = useState<number|null>(null)
 
   useEffect(() => {
     async function load() {
-      const [{ data: w }, { data: g }] = await Promise.all([
+      const [{ data: w }, { data: g }, { data: t }] = await Promise.all([
         supabase.from('earnings_weeks').select('*').order('week_start', { ascending: true }),
         supabase.from('goals').select('*'),
+        supabase.from('trips').select('*'),
       ])
       if (w) { setWeeks(w); setSelectedWeek(w.length - 1) }
       if (g) setGoals(g)
+      if (t) setTrips(t)
       setLoading(false)
     }
     load()
@@ -44,6 +50,19 @@ export default function EarningsTab() {
   const displayEarnings = period === 'week' ? weekEarnings : totalEarnings
   const maxBar = weeks.length > 0 ? Math.max(...weeks.map(x => x.total), 1) : 1
   const activeWeek = selectedWeek !== null ? weeks[selectedWeek] : null
+
+  // Daily breakdown for selected week
+  const dayEarnings: number[] = DAYS.map((_, di) => {
+    if (!activeWeek) return 0
+    const weekStart = new Date(activeWeek.week_start)
+    // week_start is Monday; di 0=Mon … 6=Sun
+    const target = new Date(weekStart)
+    target.setDate(weekStart.getDate() + di)
+    const dateStr = target.toISOString().slice(0, 10)
+    return trips
+      .filter(t => t.date === dateStr)
+      .reduce((s, t) => s + (t.total ?? 0), 0)
+  })
 
   if (loading) return (
     <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--muted)',fontFamily:'Space Mono,monospace',fontSize:'0.7rem'}}>
@@ -170,6 +189,57 @@ export default function EarningsTab() {
                   <span style={{fontSize:'0.72rem',fontWeight:700,color:r.c}}>{r.v}</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Daily breakdown */}
+          {activeWeek && (
+            <div style={{marginTop:14,borderTop:'1px solid var(--border)',paddingTop:12}}>
+              <div style={{fontSize:'0.55rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:10}}>Daily Breakdown</div>
+              <div style={{display:'flex',gap:5}}>
+                {DAYS.map((day, di) => {
+                  const earned = dayEarnings[di]
+                  const isActive = selectedDay === di
+                  const hasData = earned > 0
+                  return (
+                    <button
+                      key={day}
+                      onClick={() => setSelectedDay(isActive ? null : di)}
+                      style={{
+                        flex:1, padding:'8px 2px', borderRadius:8, border:'1px solid',
+                        cursor:'pointer', textAlign:'center',
+                        background: isActive ? 'rgba(0,229,160,0.12)' : 'rgba(255,255,255,0.03)',
+                        borderColor: isActive ? 'var(--green)' : hasData ? 'rgba(0,229,160,0.25)' : 'var(--border)',
+                      }}
+                    >
+                      <div style={{fontSize:'0.5rem',fontFamily:'Space Mono,monospace',color:isActive?'var(--green)':hasData?'var(--text)':'var(--muted)',fontWeight:700}}>{day}</div>
+                      <div style={{fontSize:'0.58rem',fontWeight:800,color:isActive?'var(--green)':hasData?'var(--text)':'var(--muted)',marginTop:3}}>{hasData ? `$${earned.toFixed(0)}` : '—'}</div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {selectedDay !== null && (
+                <div style={{marginTop:10,background:'rgba(0,229,160,0.05)',border:'1px solid rgba(0,229,160,0.2)',borderRadius:10,padding:'12px 14px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div>
+                      <div style={{fontSize:'0.6rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginBottom:2}}>{DAYS[selectedDay]} · {(() => { const d = new Date(activeWeek.week_start); d.setDate(d.getDate() + selectedDay); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) })()}</div>
+                      <div style={{fontSize:'1.6rem',fontWeight:800,color:'var(--green)',letterSpacing:'-0.03em'}}>{fmt(dayEarnings[selectedDay])}</div>
+                    </div>
+                    <div style={{textAlign:'right'}}>
+                      <div style={{fontSize:'0.55rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',marginBottom:2}}>Trips</div>
+                      <div style={{fontSize:'1.2rem',fontWeight:800,color:'var(--text)'}}>
+                        {(() => {
+                          const d = new Date(activeWeek.week_start)
+                          d.setDate(d.getDate() + selectedDay)
+                          const dateStr = d.toISOString().slice(0, 10)
+                          return trips.filter(t => t.date === dateStr).length
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

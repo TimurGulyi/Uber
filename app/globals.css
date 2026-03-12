@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg: #07080f;
+  --surface: #0f1018;
+  --surface2: #13141f;
+  --border: #1c1d2e;
+  --text: #dde0f0;
+  --muted: #44465a;
+  --green: #00e5a0;
+  --red: #ff4060;
+  --yellow: #ffc040;
+  --blue: #40b0ff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  overflow: hidden;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Google Maps dark filter */
+.gmap-dark { filter: invert(92%) hue-rotate(180deg) brightness(0.85) saturate(0.7); }
+.gmap-dark img { filter: invert(1) hue-rotate(180deg); }
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0 }
+  to   { opacity: 1 }
+}
+@keyframes slideInUp {
+  from { transform: translateY(28px); opacity: 0 }
+  to   { transform: translateY(0);    opacity: 1 }
+}
+@keyframes slideInDown {
+  from { transform: translateY(-20px); opacity: 0 }
+  to   { transform: translateY(0);     opacity: 1 }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-24px); opacity: 0 }
+  to   { transform: translateX(0);     opacity: 1 }
+}
+@keyframes slideInRight {
+  from { transform: translateX(24px); opacity: 0 }
+  to   { transform: translateX(0);    opacity: 1 }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.93); opacity: 0 }
+  to   { transform: scale(1);    opacity: 1 }
+}
+@keyframes popIn {
+  0%   { transform: scale(0.8);  opacity: 0 }
+  70%  { transform: scale(1.06); opacity: 1 }
+  100% { transform: scale(1);    opacity: 1 }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,160,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(0,229,160,0);  }
+}
+
+/* Animation utility classes */
+.anim-fade        { animation: fadeIn      0.4s ease           both; }
+.anim-slide-up    { animation: slideInUp   0.38s cubic-bezier(0.4,0,0.2,1) both; }
+.anim-slide-down  { animation: slideInDown 0.38s cubic-bezier(0.4,0,0.2,1) both; }
+.anim-slide-left  { animation: slideInLeft 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.anim-slide-right { animation: slideInRight 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.anim-scale       { animation: scaleIn     0.3s  cubic-bezier(0.4,0,0.2,1) both; }
+.anim-pop         { animation: popIn       0.35s cubic-bezier(0.4,0,0.2,1) both; }
+
+/* Stagger delays */
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.10s; }
+.d3 { animation-delay: 0.15s; }
+.d4 { animation-delay: 0.20s; }
+.d5 { animation-delay: 0.25s; }
+.d6 { animation-delay: 0.30s; }
+
+/* Global button feel */
+button {
+  transition: transform 0.12s ease, opacity 0.15s ease,
+              background 0.15s ease, box-shadow 0.18s ease,
+              color 0.15s ease, border-color 0.15s ease !important;
+}
+button:active:not(:disabled) {
+  transform: scale(0.95) !important;
+}
+
+/* Green dot pulse */
+.live-dot {
+  animation: pulse-glow 1.8s ease-in-out infinite;
+}

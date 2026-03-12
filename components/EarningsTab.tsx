@@ -153,14 +153,40 @@ export default function EarningsTab() {
 
         {/* Weekly bar chart */}
         <div style={{margin:'16px 16px 0',background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'16px'}}>
-          <div style={{fontSize:'0.62rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:14}}>Weekly Chart</div>
+          {/* Week navigator */}
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14}}>
+            <button
+              onClick={() => { if (selectedWeek !== null && selectedWeek > 0) { setSelectedWeek(selectedWeek - 1); setSelectedDay(null) } }}
+              disabled={selectedWeek === null || selectedWeek === 0}
+              style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,padding:'5px 10px',cursor:selectedWeek===0?'default':'pointer',color:selectedWeek===0?'var(--muted)':'var(--text)',fontSize:'0.75rem',opacity:selectedWeek===0?0.3:1}}
+            >←</button>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'0.62rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.12em'}}>
+                {selectedWeek !== null && weeks.length > 0 ? (
+                  selectedWeek === weeks.length - 1 ? 'This Week' :
+                  selectedWeek === weeks.length - 2 ? 'Last Week' :
+                  `${weeks.length - 1 - selectedWeek} Weeks Ago`
+                ) : 'Weekly Chart'}
+              </div>
+              {activeWeek && (
+                <div style={{fontSize:'0.7rem',fontWeight:700,color:'var(--text)',marginTop:2}}>
+                  {new Date(activeWeek.week_start).toLocaleDateString('en-US',{month:'short',day:'numeric'})} – {new Date(activeWeek.week_end).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => { if (selectedWeek !== null && selectedWeek < weeks.length - 1) { setSelectedWeek(selectedWeek + 1); setSelectedDay(null) } }}
+              disabled={selectedWeek === null || selectedWeek === weeks.length - 1}
+              style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,padding:'5px 10px',cursor:selectedWeek===weeks.length-1?'default':'pointer',color:selectedWeek===weeks.length-1?'var(--muted)':'var(--text)',fontSize:'0.75rem',opacity:selectedWeek===weeks.length-1?0.3:1}}
+            >→</button>
+          </div>
           <div style={{display:'flex',gap:6,alignItems:'flex-end',height:90}}>
             {weeks.map((w, i) => {
               const pct = Math.max(8, Math.round((w.total / maxBar) * 100))
               const isSelected = selectedWeek === i
               const weekLabel = new Date(w.week_start).toLocaleDateString('en-US',{month:'short',day:'numeric'})
               return (
-                <div key={w.id} onClick={() => setSelectedWeek(isSelected ? null : i)}
+                <div key={w.id} onClick={() => { setSelectedWeek(isSelected ? null : i); setSelectedDay(null) }}
                   style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4,cursor:'pointer'}}>
                   <span style={{fontSize:'0.58rem',color:isSelected?'var(--green)':'var(--muted)',fontWeight:700}}>{fmtK(w.total)}</span>
                   <div style={{

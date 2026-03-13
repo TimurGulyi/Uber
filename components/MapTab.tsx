@@ -72,7 +72,8 @@ function fmtTime(minutes: number) {
   return `${disp}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`
 }
 
-export default function MapTab({ sidebarOpen, onSidebarClose }: { sidebarOpen: boolean; onSidebarClose: () => void }) {
+export default function MapTab() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const mapRef = useRef<HTMLDivElement>(null)
   const gmapRef = useRef<google.maps.Map|null>(null)
   const placesRef = useRef<google.maps.places.PlacesService|null>(null)
@@ -308,10 +309,39 @@ export default function MapTab({ sidebarOpen, onSidebarClose }: { sidebarOpen: b
   return (
     <div style={{position:'relative',width:'100%',height:'100%',overflow:'hidden'}}>
 
+      {/* Burger button */}
+      <button
+        onClick={() => setSidebarOpen(v => !v)}
+        style={{
+          position:'absolute',
+          top:'calc(10px + env(safe-area-inset-top))',
+          left:14,
+          zIndex:25,
+          background: sidebarOpen ? 'rgba(0,229,160,0.12)' : 'rgba(15,16,24,0.92)',
+          border:`1px solid ${sidebarOpen ? 'var(--green)' : 'var(--border)'}`,
+          borderRadius:10, padding:'9px 11px',
+          cursor:'pointer',
+          color: sidebarOpen ? 'var(--green)' : 'var(--text)',
+          display:'flex', flexDirection:'column', gap:4,
+          alignItems:'center', justifyContent:'center',
+          boxShadow:'0 2px 12px rgba(0,0,0,0.5)',
+        }}
+      >
+        {sidebarOpen ? (
+          <span style={{fontSize:'1rem',lineHeight:1,fontWeight:700,display:'block',width:18,textAlign:'center'}}>✕</span>
+        ) : (
+          <>
+            <span style={{display:'block',width:18,height:2,background:'currentColor',borderRadius:1}} />
+            <span style={{display:'block',width:18,height:2,background:'currentColor',borderRadius:1}} />
+            <span style={{display:'block',width:18,height:2,background:'currentColor',borderRadius:1}} />
+          </>
+        )}
+      </button>
+
       {/* Sidebar backdrop */}
       {sidebarOpen && (
         <div
-          onClick={onSidebarClose}
+          onClick={() => setSidebarOpen(false)}
           style={{
             position:'absolute',inset:0,zIndex:19,
             background:'rgba(0,0,0,0.55)',

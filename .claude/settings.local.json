@@ -12,7 +12,9 @@
       "Bash(npm install:*)",
       "Bash(node -e \"console.log\\(require\\(''./node_modules/next/package.json''\\).version\\)\")",
       "Bash(npx vercel:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep -v \"^$\")",
+      "Bash(grep -n \"Trip\\\\|trip\\\\|zone\\\\|Zone\" /c/myproject-uber/gigstack/components/*.tsx)"
     ]
   }
 }

@@ -8,7 +8,10 @@ const ICONS: Record<string,string> = {
 
 const ZONE_COLORS: Record<string,string> = {
   'Hollywood':'#ff4060', 'DTLA':'#00e5a0', 'West Hollywood':'#ffc040',
-  'Silver Lake':'#40b0ff', 'Culver City':'#a78bfa', 'default':'#44465a',
+  'Silver Lake':'#40b0ff', 'Culver City':'#a78bfa',
+  'Fairfax':'#f97316', 'Glendale':'#e879f9', 'Koreatown':'#38bdf8',
+  'Burbank':'#a3e635', 'Mid-Wilshire':'#fb7185', 'Chinatown':'#fbbf24',
+  'Beverly Hills':'#c084fc', 'default':'#44465a',
 }
 
 export default function TripsTab() {
@@ -21,6 +24,7 @@ export default function TripsTab() {
       const { data } = await supabase
         .from('trips')
         .select('*')
+        .order('date', { ascending: false })
         .order('created_at', { ascending: false })
       if (data) setTrips(data)
       setLoading(false)
@@ -28,10 +32,13 @@ export default function TripsTab() {
     load()
   }, [])
 
+  const getTotal = (t: Trip) => t.total > 0 ? t.total : (t.earnings + t.tip)
+
   const filtered = trips.filter(t => {
-    if (filter === 'best') return t.total >= 20
+    if (filter === 'best') return getTotal(t) >= 20
     if (filter === 'tips') return t.tip >= 5
     if (filter === 'late') {
+      // date field is date-only; use created_at time for manually-logged trips
       const hour = new Date(t.created_at).getHours()
       return hour >= 22 || hour <= 3
     }
@@ -74,9 +81,11 @@ export default function TripsTab() {
         )}
         {filtered.map(trip => {
           const zoneColor = ZONE_COLORS[trip.zone||''] || ZONE_COLORS.default
-          const date = new Date(trip.created_at)
-          const dateStr = date.toLocaleDateString('en-US',{month:'short',day:'numeric'})
-          const timeStr = date.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})
+          // Parse date safely as local date (avoid UTC midnight timezone shift)
+          const [yr, mo, dy] = trip.date.split('-').map(Number)
+          const dateObj = new Date(yr, mo - 1, dy)
+          const dateStr = dateObj.toLocaleDateString('en-US',{month:'short',day:'numeric'})
+          const total = getTotal(trip)
           return (
             <div key={trip.id} style={{
               background:'var(--surface)',border:'1px solid var(--border)',
@@ -89,8 +98,8 @@ export default function TripsTab() {
                   <span style={{fontSize:'1rem'}}>{ICONS[trip.platform]||'🟢'}</span>
                   <span style={{fontWeight:700,fontSize:'0.9rem'}}>{trip.restaurant_name}</span>
                 </div>
-                <div style={{display:'flex',gap:12}}>
-                  <span style={{fontSize:'0.65rem',color:'var(--muted)'}}>{dateStr} · {timeStr}</span>
+                <div style={{display:'flex',gap:12,alignItems:'center'}}>
+                  <span style={{fontSize:'0.65rem',color:'var(--muted)'}}>{dateStr}</span>
                   {trip.zone && <span style={{fontSize:'0.65rem',color:zoneColor}}>📍 {trip.zone}</span>}
                 </div>
                 {trip.tip > 0 && (
@@ -98,7 +107,7 @@ export default function TripsTab() {
                 )}
               </div>
               <div style={{textAlign:'right'}}>
-                <div style={{fontSize:'1.2rem',fontWeight:800,color:'var(--green)'}}>{fmt(trip.total)}</div>
+                <div style={{fontSize:'1.2rem',fontWeight:800,color:'var(--green)'}}>{fmt(total)}</div>
                 <div style={{fontSize:'0.6rem',color:'var(--muted)'}}>base {fmt(trip.earnings)}</div>
               </div>
             </div>

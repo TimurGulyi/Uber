@@ -1,8 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase, EarningsWeek, Goal, Trip } from '@/lib/supabase'
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] as const
+
+type GoalPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly'
+const PERIOD_LABELS: Record<GoalPeriod, string> = { daily:'Day', weekly:'Week', monthly:'Month', yearly:'Year' }
 
 export default function EarningsTab() {
   const [weeks, setWeeks] = useState<EarningsWeek[]>([])
@@ -12,6 +16,10 @@ export default function EarningsTab() {
   const [loading, setLoading] = useState(true)
   const [selectedWeek, setSelectedWeek] = useState<number|null>(null)
   const [selectedDay, setSelectedDay] = useState<number|null>(null)
+  const [goalModal, setGoalModal] = useState<{ slot: 'weekly'|'monthly' } | null>(null)
+  const [goalAmount, setGoalAmount] = useState('')
+  const [goalPeriod, setGoalPeriod] = useState<GoalPeriod>('monthly')
+  const [goalSaving, setGoalSaving] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -27,6 +35,29 @@ export default function EarningsTab() {
     }
     load()
   }, [])
+
+  const openGoalModal = (slot: 'weekly'|'monthly') => {
+    const existing = goals.find(g => g.type === slot)
+    setGoalAmount(existing ? String(existing.target) : '')
+    setGoalPeriod((existing?.type as GoalPeriod) || slot)
+    setGoalModal({ slot })
+  }
+
+  const saveGoal = async () => {
+    const amount = parseFloat(goalAmount)
+    if (!amount || amount <= 0) return
+    setGoalSaving(true)
+    const existing = goals.find(g => g.type === goalPeriod)
+    if (existing) {
+      await supabase.from('goals').update({ target: amount }).eq('id', existing.id)
+    } else {
+      await supabase.from('goals').insert({ type: goalPeriod, target: amount })
+    }
+    const { data } = await supabase.from('goals').select('*')
+    if (data) setGoals(data)
+    setGoalSaving(false)
+    setGoalModal(null)
+  }
 
   const totalEarnings   = weeks.reduce((s, w) => s + w.total, 0)
   const totalTips       = weeks.reduce((s, w) => s + w.tips, 0)
@@ -127,11 +158,14 @@ export default function EarningsTab() {
           <div style={{fontSize:'0.62rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.12em',marginBottom:10}}>Goals</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             {[
-              {label:'Weekly',  current:weekEarnings,  target:weeklyGoal,  pct:weekPct,  color:'var(--yellow)'},
-              {label:'Monthly', current:totalEarnings, target:monthlyGoal, pct:monthPct, color:'var(--green)'},
+              {label:'Weekly',  slot:'weekly'  as const, current:weekEarnings,  target:weeklyGoal,  pct:weekPct,  color:'var(--yellow)'},
+              {label:'Monthly', slot:'monthly' as const, current:totalEarnings, target:monthlyGoal, pct:monthPct, color:'var(--green)'},
             ].map(g => (
-              <div key={g.label} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px'}}>
-                <div style={{fontSize:'0.55rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:6}}>{g.label} Goal</div>
+              <div key={g.label} onClick={() => openGoalModal(g.slot)} style={{background:'var(--surface)',border:'1px solid var(--border)',borderRadius:12,padding:'14px',cursor:'pointer',position:'relative'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+                  <div style={{fontSize:'0.55rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.1em'}}>{g.label} Goal</div>
+                  <span style={{fontSize:'0.65rem',color:'var(--muted)'}}>✏️</span>
+                </div>
                 <div style={{display:'flex',alignItems:'baseline',gap:3,marginBottom:10}}>
                   <span style={{fontSize:'1.25rem',fontWeight:800,color:g.color}}>{fmtK(g.current)}</span>
                   <span style={{fontSize:'0.6rem',color:'var(--muted)'}}>/ {fmtK(g.target)}</span>
@@ -359,6 +393,69 @@ export default function EarningsTab() {
         </div>
 
       </div>
+
+      {goalModal && createPortal(
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setGoalModal(null) }}
+          style={{
+            position:'fixed',inset:0,background:'rgba(7,8,15,0.85)',
+            display:'flex',alignItems:'flex-end',justifyContent:'center',
+            zIndex:9999,backdropFilter:'blur(4px)',
+          }}
+        >
+          <div style={{
+            background:'var(--surface)',borderRadius:'20px 20px 0 0',
+            border:'1px solid var(--border)',width:'100%',maxWidth:500,
+            padding:'24px 20px 40px',
+          }}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <div style={{fontSize:'1.1rem',fontWeight:800}}>Set Goal</div>
+              <button onClick={() => setGoalModal(null)} style={{background:'none',border:'none',color:'var(--muted)',fontSize:'1.2rem',cursor:'pointer'}}>✕</button>
+            </div>
+
+            <div style={{fontSize:'0.62rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:8}}>Period</div>
+            <div style={{display:'flex',gap:8,marginBottom:20}}>
+              {(['daily','weekly','monthly','yearly'] as GoalPeriod[]).map(p => (
+                <button key={p} onClick={() => setGoalPeriod(p)} style={{
+                  flex:1,padding:'9px 0',borderRadius:8,border:'1px solid',
+                  fontSize:'0.65rem',fontFamily:'Space Mono,monospace',cursor:'pointer',fontWeight:700,
+                  background:goalPeriod===p?'rgba(0,229,160,0.12)':'transparent',
+                  borderColor:goalPeriod===p?'var(--green)':'var(--border)',
+                  color:goalPeriod===p?'var(--green)':'var(--muted)',
+                }}>{PERIOD_LABELS[p]}</button>
+              ))}
+            </div>
+
+            <div style={{fontSize:'0.62rem',fontFamily:'Space Mono,monospace',color:'var(--muted)',textTransform:'uppercase',letterSpacing:'0.1em',marginBottom:8}}>Target ($)</div>
+            <input
+              type="number"
+              step="1"
+              value={goalAmount}
+              onChange={e => setGoalAmount(e.target.value)}
+              placeholder={goalPeriod==='daily'?'e.g. 150':goalPeriod==='weekly'?'e.g. 500':goalPeriod==='monthly'?'e.g. 2000':'e.g. 24000'}
+              autoFocus
+              style={{
+                width:'100%',background:'var(--surface2)',border:'1px solid var(--border)',
+                borderRadius:8,padding:'12px 14px',color:'var(--text)',
+                fontSize:'1.5rem',fontWeight:800,outline:'none',marginBottom:20,
+                fontFamily:'Syne,sans-serif',boxSizing:'border-box',
+              }}
+            />
+
+            <button
+              onClick={saveGoal}
+              disabled={goalSaving || !goalAmount}
+              style={{
+                width:'100%',padding:'14px 0',borderRadius:10,border:'none',
+                background:'linear-gradient(135deg,#00e5a0,#00b87a)',
+                color:'#07080f',fontSize:'0.95rem',fontWeight:800,cursor:'pointer',
+                fontFamily:'Syne,sans-serif',opacity:goalSaving||!goalAmount?0.5:1,
+              }}
+            >{goalSaving ? 'Saving…' : `Save ${PERIOD_LABELS[goalPeriod]} Goal`}</button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }

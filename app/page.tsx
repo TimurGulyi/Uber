@@ -13,7 +13,6 @@ type Panel = Exclude<Tab, 'map'> | null
 export default function Home() {
   const [activePanel, setActivePanel] = useState<Panel>(null)
   const [modalOpen, setModalOpen]     = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [refreshKey, setRefreshKey]   = useState(0)
 
   const onTripSaved = () => {
@@ -38,73 +37,52 @@ export default function Home() {
       display: 'flex', flexDirection: 'column',
     }}>
 
-      {/* ── Map always behind everything ── */}
+      {/* ── Map always behind everything — burger lives INSIDE MapTab now ── */}
       <div style={{ position: 'absolute', inset: 0, bottom: 64 }}>
-        <MapTab sidebarOpen={sidebarOpen} onSidebarClose={() => setSidebarOpen(false)} />
+        <MapTab />
       </div>
 
-      {/* ── Floating top bar ── */}
-      <div className="anim-slide-down" style={{
-        position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 14px',
-        paddingTop: 'calc(10px + env(safe-area-inset-top))',
-        background: 'linear-gradient(180deg,rgba(7,8,15,0.9) 0%,rgba(7,8,15,0) 100%)',
-        pointerEvents: 'none',
-      }}>
-        {/* Burger button — toggles info sidebar */}
-        <button
-          onClick={() => setSidebarOpen(v => !v)}
-          style={{
-            pointerEvents: 'auto',
-            background: sidebarOpen ? 'rgba(0,229,160,0.12)' : 'rgba(15,16,24,0.92)',
-            border: `1px solid ${sidebarOpen ? 'var(--green)' : 'var(--border)'}`,
-            borderRadius: 10, padding: '9px 11px',
-            cursor: 'pointer',
-            color: sidebarOpen ? 'var(--green)' : 'var(--text)',
-            display: 'flex', flexDirection: 'column', gap: 4,
-            alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
-          }}
-        >
-          {sidebarOpen ? (
-            <span style={{ fontSize: '1rem', lineHeight: 1, fontWeight: 700, display: 'block', width: 18, textAlign: 'center' }}>✕</span>
-          ) : (
-            <>
-              <span style={{ display: 'block', width: 18, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              <span style={{ display: 'block', width: 18, height: 2, background: 'currentColor', borderRadius: 1 }} />
-              <span style={{ display: 'block', width: 18, height: 2, background: 'currentColor', borderRadius: 1 }} />
-            </>
-          )}
-        </button>
-
-        {/* Logo */}
-        <div style={{
-          fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em',
-          background: 'rgba(15,16,24,0.85)',
-          padding: '7px 14px', borderRadius: 10,
-          border: '1px solid var(--border)',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+      {/* ── Floating top bar (logo + trip button) — only on map tab ── */}
+      {activePanel === null && (
+        <div className="anim-slide-down" style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px',
+          paddingTop: 'calc(10px + env(safe-area-inset-top))',
+          background: 'linear-gradient(180deg,rgba(7,8,15,0.9) 0%,rgba(7,8,15,0) 100%)',
+          pointerEvents: 'none',
         }}>
-          GigStack
-        </div>
+          {/* Spacer matching burger width */}
+          <div style={{ width: 40 }} />
 
-        {/* + Trip button */}
-        <button
-          onClick={() => setModalOpen(true)}
-          style={{
-            pointerEvents: 'auto',
-            background: 'linear-gradient(135deg,#00e5a0,#00b87a)',
-            border: 'none', borderRadius: 10, padding: '9px 14px',
-            cursor: 'pointer', color: '#07080f',
-            fontWeight: 800, fontSize: '0.8rem',
-            fontFamily: 'Space Mono,monospace',
-            boxShadow: '0 2px 12px rgba(0,229,160,0.35)',
-          }}
-        >
-          + Trip
-        </button>
-      </div>
+          {/* Logo */}
+          <div style={{
+            fontSize: '1rem', fontWeight: 800, letterSpacing: '-0.02em',
+            background: 'rgba(15,16,24,0.85)',
+            padding: '7px 14px', borderRadius: 10,
+            border: '1px solid var(--border)',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+          }}>
+            GigStack
+          </div>
+
+          {/* + Trip button */}
+          <button
+            onClick={() => setModalOpen(true)}
+            style={{
+              pointerEvents: 'auto',
+              background: 'linear-gradient(135deg,#00e5a0,#00b87a)',
+              border: 'none', borderRadius: 10, padding: '9px 14px',
+              cursor: 'pointer', color: '#07080f',
+              fontWeight: 800, fontSize: '0.8rem',
+              fontFamily: 'Space Mono,monospace',
+              boxShadow: '0 2px 12px rgba(0,229,160,0.35)',
+            }}
+          >
+            + Trip
+          </button>
+        </div>
+      )}
 
       {/* ── Slide-in content panels (over map, under bottom nav) ── */}
       {(['earnings', 'trips', 'insights'] as const).map(panel => (
